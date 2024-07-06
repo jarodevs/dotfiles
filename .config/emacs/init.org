@@ -1,0 +1,414 @@
+* Miscallaneous
+** Allow pinentry prompt for gpg passphrases
+#+begin_src emacs-lisp :tangle lisp/miscellaneous.el
+  (setq epa-pinentry-mode 'loopback)
+#+end_src
+** Set exec path = PATH
+Exec path used by emacs needs to be configured to load path from shell
+#+begin_src emacs-lisp :tangle lisp/miscellaneous.el
+  (straight-use-package 'exec-path-from-shell)
+  (when (memq window-system '(mac ns x))
+    (exec-path-from-shell-initialize))
+  (when (daemonp)
+    (exec-path-from-shell-initialize))
+#+end_src
+** Easily switch windows
+#+begin_src emacs-lisp :tangle lisp/miscellaneous.el
+  (straight-use-package 'ace-window)
+  (global-set-key (kbd "M-o") #'ace-window)
+#+end_src
+* Evil Mode
+#+begin_src emacs-lisp :tangle lisp/evil.el
+  (straight-use-package 'evil)
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  (require 'evil)
+  (evil-mode 1)
+
+  (straight-use-package 'evil-collection)
+  (require 'evil-collection)
+  (evil-collection-init)
+#+end_src
+
+* Appearance
+** Global ui tweaks
+#+begin_src emacs-lisp :tangle lisp/appearance.el
+  (setq-default indent-tabs-mode nil)
+  (global-display-line-numbers-mode)
+  (column-number-mode 1)
+  (show-paren-mode 1)
+  (tool-bar-mode 0)
+  (menu-bar-mode 0)
+  (scroll-bar-mode 0)
+#+end_src
+** Font configuration
+#+begin_src emacs-lisp :tangle lisp/appearance.el
+  (set-face-attribute 'default nil :font "Ubuntu Mono" :height 160)
+#+end_src
+
+** Theme configuration
+#+begin_src emacs-lisp :tangle lisp/appearance.el
+  (straight-use-package 'modus-themes)
+  (straight-use-package 'dracula-theme)
+  (straight-use-package 'doom-themes)
+  (straight-use-package 'apropospriate-theme)
+  (straight-use-package 'gruber-darker-theme)
+
+  (setq custom-safe-theme t)
+  (require 'doom-themes)
+  (load-theme 'doom-ayu-dark t)
+#+end_src
+** Distinguish write buffers from others
+#+begin_src emacs-lisp :tangle lisp/appearance.el
+  (straight-use-package 'solaire-mode)
+  (require 'solaire-mode)
+  (solaire-global-mode +1)
+#+end_src
+** Dim non focused buffers
+#+begin_src emacs-lisp :tangle lisp/appearance.el
+  (straight-use-package 'dimmer)
+  (require 'dimmer)
+  (dimmer-configure-which-key)
+  (dimmer-mode 1)
+#+end_src
+** Colorize compilation buffer
+There are two parts in this: 
+#+begin_src emacs-lisp :tangle lisp/appearance.el
+  ;; Stolen from (http://endlessparentheses.com/ansi-colors-in-the-compilation-buffer-output.html)
+  (require 'ansi-color)
+  (defun endless/colorize-compilation ()
+    "Colorize from `compilation-filter-start' to `point'."
+    (let ((inhibit-read-only t))
+      (ansi-color-apply-on-region
+       compilation-filter-start (point))))
+
+  (add-hook 'compilation-filter-hook
+            #'endless/colorize-compilation)
+#+end_src
+Next, filter out unwanted ANSI escape sequences, like the ones intended for ttys but Emacs doesn't know/care about:
+#+begin_src emacs-lisp :tangle lisp/appearance.el
+  ;; Stolen from (https://oleksandrmanzyuk.wordpress.com/2011/11/05/better-emacs-shell-part-i/)
+  (defun regexp-alternatives (regexps)
+    "Return the alternation of a list of regexps."
+    (mapconcat (lambda (regexp)
+                 (concat "\\(?:" regexp "\\)"))
+               regexps "\\|"))
+
+  (defvar non-sgr-control-sequence-regexp nil
+    "Regexp that matches non-SGR control sequences.")
+
+  (setq non-sgr-control-sequence-regexp
+        (regexp-alternatives
+         '(;; icon name escape sequences
+           "\033\\][0-2];.*?\007"
+           ;; non-SGR CSI escape sequences
+           "\033\\[\\??[0-9;]*[^0-9;m]"
+           ;; noop
+           "\012\033\\[2K\033\\[1F"
+           )))
+
+  (defun filter-non-sgr-control-sequences-in-region (begin end)
+    (save-excursion
+      (goto-char begin)
+      (while (re-search-forward
+              non-sgr-control-sequence-regexp end t)
+        (replace-match ""))))
+
+  (defun filter-non-sgr-control-sequences-in-output (ignored)
+    (let ((start-marker
+           (or comint-last-output-start
+               (point-min-marker)))
+          (end-marker
+           (process-mark
+            (get-buffer-process (current-buffer)))))
+      (filter-non-sgr-control-sequences-in-region
+       start-marker
+       end-marker)))
+
+  (add-hook 'comint-output-filter-functions
+            'filter-non-sgr-control-sequences-in-output)
+#+end_src
+* Minibuffer
+** Vertical completion
+Vertico Setup
+#+begin_src emacs-lisp :tangle lisp/minibuffer.el
+  (straight-use-package 'vertico)
+  (require 'vertico)
+  (vertico-mode)
+
+  ;; Setup indicator of current candidate
+  (defvar +vertico-current-arrow t)
+  (cl-defmethod vertico--format-candidate :around
+    (cand prefix suffix index start &context ((and +vertico-current-arrow
+						   (not (bound-and-true-p vertico-flat-mode)))
+					      (eql t)))
+    (setq cand (cl-call-next-method cand prefix suffix index start))
+    (if (bound-and-true-p vertico-grid-mode)
+	(if (= vertico--index index)
+	    (concat #("▶" 0 1 (face vertico-current)) cand)
+	  (concat #("_" 0 1 (display " ")) cand))
+      (if (= vertico--index index)
+	  (concat
+	   #(" " 0 1 (display (left-fringe right-triangle vertico-current)))
+	   cand)
+	cand)))
+
+#+end_src 
+
+Persists history
+#+begin_src emacs-lisp :tangle lisp/minibuffer.el
+  (straight-use-package 'savehist)
+  (require 'savehist)
+  (savehist-mode)
+#+end_src
+Candidate documentation annotation
+#+begin_src emacs-lisp :tangle lisp/minibuffer.el
+  (straight-use-package 'marginalia)
+  ;; Activate marginalia-mode right away.
+  (marginalia-mode)
+#+end_src
+** Search & Navigation commands
+*** Consult setup
+#+begin_src emacs-lisp :tangle lisp/minibuffer.el
+  (straight-use-package 'consult)
+  (global-set-key (kbd "C-x b") #'consult-buffer)
+#+end_src
+*** Orderless
+**** Base configuration
+#+begin_src emacs-lisp :tangle lisp/minibuffer.el
+  (straight-use-package 'orderless)
+  (require 'orderless)
+  (defun +orderless--consult-suffix ()
+    "Regexp which matches the end of string with Consult tofu support."
+    (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
+        (format "[%c-%c]*$"
+                consult--tofu-char
+                (+ consult--tofu-char consult--tofu-range -1))
+      "$"))
+
+  ;; Recognizes the following patterns:
+  ;; * .ext (file extension)
+  ;; * regexp$ (regexp matching at end)
+  (defun +orderless-consult-dispatch (word _index _total)
+    (cond
+     ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
+     ((string-suffix-p "$" word)
+      `(orderless-regexp . ,(concat (substring word 0 -1) (+orderless--consult-suffix))))
+     ;; File extensions
+     ((and (or minibuffer-completing-file-name
+               (derived-mode-p 'eshell-mode))
+           (string-match-p "\\`\\.." word))
+      `(orderless-regexp . ,(concat "\\." (substring word 1) (+orderless--consult-suffix))))))
+
+  ;; Define orderless style with initialism by default
+  (orderless-define-completion-style +orderless-with-initialism
+    (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp)))
+
+  ;; You may want to combine the `orderless` style with `substring` and/or `basic`.
+  ;; There are many details to consider, but the following configurations all work well.
+  ;; Personally I (@minad) use option 3 currently. Also note that you may want to configure
+  ;; special styles for special completion categories, e.g., partial-completion for files.
+  ;;
+  ;; 1. (setq completion-styles '(orderless))
+  ;; This configuration results in a very coherent completion experience,
+  ;; since orderless is used always and exclusively. But it may not work
+  ;; in all scenarios. Prefix expansion with TAB is not possible.
+  ;;
+  ;; 2. (setq completion-styles '(substring orderless))
+  ;; By trying substring before orderless, TAB expansion is possible.
+  ;; The downside is that you can observe the switch from substring to orderless
+  ;; during completion, less coherent.
+  ;;
+  ;; 3. (setq completion-styles '(orderless basic))
+  ;; Certain dynamic completion tables (completion-table-dynamic)
+  ;; do not work properly with orderless. One can add basic as a fallback.
+  ;; Basic will only be used when orderless fails, which happens only for
+  ;; these special tables.
+  ;;
+  ;; 4. (setq completion-styles '(substring orderless basic))
+  ;; Combine substring, orderless and basic.
+  ;;
+  (setq completion-styles '(orderless basic)
+        completion-category-defaults nil
+        ;;; Enable partial-completion for files.
+        ;;; Either give orderless precedence or partial-completion.
+        ;;; Note that completion-category-overrides is not really an override,
+        ;;; but rather prepended to the default completion-styles.
+        ;; completion-category-overrides '((file (styles orderless partial-completion))) ;; orderless is tried first
+        completion-category-overrides '((file (styles partial-completion)) ;; partial-completion is tried first
+                                        ;; enable initialism by default for symbols
+                                        (command (styles +orderless-with-initialism))
+                                        (variable (styles +orderless-with-initialism))
+                                        (symbol (styles +orderless-with-initialism)))
+        orderless-component-separator #'orderless-escapable-split-on-space ;; allow escaping space with backslash!
+        orderless-style-dispatchers (list #'+orderless-consult-dispatch
+                                          #'orderless-affix-dispatch))
+#+end_src
+
+**** Use Orderless as pattern compiler for consult-grep/ripgrep/find 
+#+begin_src emacs-lisp :tangle lisp/minibuffer.el (straight-use-package 'orderless)
+  (defun consult--orderless-regexp-compiler (input type &rest _config)
+    (setq input (orderless-pattern-compiler input))
+    (cons
+     (mapcar (lambda (r) (consult--convert-regexp r type)) input)
+     (lambda (str) (orderless--highlight input t str))))
+
+  ;; OPTION 1: Activate globally for all consult-grep/ripgrep/find/...
+  ;; (setq consult--regexp-compiler #'consult--orderless-regexp-compiler)
+
+  ;; OPTION 2: Activate only for some commands, e.g., consult-ripgrep!
+  (defun consult--with-orderless (&rest args)
+    (minibuffer-with-setup-hook
+        (lambda ()
+          (setq-local consult--regexp-compiler #'consult--orderless-regexp-compiler))
+      (apply args)))
+  (advice-add #'consult-ripgrep :around #'consult--with-orderless)
+#+end_src
+** Embark
+#+begin_src emacs-lisp :tangle lisp/minibuffer.el
+  (straight-use-package 'embark)
+  (require 'embark)
+  (global-set-key (kbd "C-;") #'embark-act)
+  (global-set-key (kbd "C-'") #'embark-dwim)
+  (global-set-key (kbd "C-h B") #'embark-bindings)
+  ;; Optionally replace the key help with a completing-read interface
+  (setq prefix-help-command #'embark-prefix-help-command)
+  (add-to-list 'display-buffer-alist
+               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                 nil
+                 (window-parameters (mode-line-format . none))))
+  ;; Consult users will also want the embark-consult package.
+  (straight-use-package 'embark-consult)
+  (require 'embark-consult)
+  (add-hook 'embark-collect-mode 'consult-preview-at-point-mode)
+#+end_src
+
+** Display time
+#+begin_src emacs-lisp :tangle lisp/minibuffer.el
+  (display-time)
+#+end_src
+* Org mode
+#+begin_src emacs-lisp :tangle lisp/org.el
+  (add-hook 'org-mode-hook 'org-indent-mode)
+  (setq org-agenda-files '("~/Documents/org/"))
+  (evil-set-initial-state 'org-agenda-mode 'normal)
+#+end_src
+* Help utilities 
+#+begin_src emacs-lisp :tangle lisp/help-utilities.el
+  (straight-use-package 'which-key)
+  (require 'which-key)
+  (which-key-mode)
+
+  (straight-use-package 'helpful)
+  ;; Note that the built-in `describe-function' includes both functions
+  ;; and macros. `helpful-function' is functions only, so we provide
+  ;; `helpful-callable' as a drop-in replacement.
+  (global-set-key (kbd "C-h f") #'helpful-callable)
+
+  (global-set-key (kbd "C-h v") #'helpful-variable)
+  (global-set-key (kbd "C-h k") #'helpful-key)
+  (global-set-key (kbd "C-h x") #'helpful-command)
+  ;; Lookup the current symbol at point. C-c C-d is a common keybinding
+  ;; for this in lisp modes.
+  (global-set-key (kbd "C-c C-d") #'helpful-at-point)
+
+  ;; Look up *F*unctions (excludes macros).
+  ;;
+  ;; By default, C-h F is bound to `Info-goto-emacs-command-node'. Helpful
+  ;; already links to the manual, if a function is referenced there.
+  (global-set-key (kbd "C-h F") #'helpful-function)
+#+end_src
+
+* Versionning
+** Magit
+#+begin_src emacs-lisp :tangle lisp/magit.el
+  (straight-use-package 'magit)
+  (setq display-line-numbers-type 'visual
+	magit-section-disable-line-numbers nil
+	magit-process-finish-apply-ansi-colors t
+	magit-show-long-lines-warning nil)
+  (evil-define-key 'normal magit-section-mode-map (kbd "1") nil)
+  (evil-define-key 'normal magit-section-mode-map (kbd "2") nil)
+  (evil-define-key 'normal magit-section-mode-map (kbd "3") nil)
+  (evil-define-key 'normal magit-section-mode-map (kbd "4") nil)
+#+end_src
+* Project
+#+begin_src emacs-lisp :tangle lisp/project.el
+  (setq project-switch-commands '(
+    (magit-project-status "Magit" "m")
+    (project-find-file "Find" "f")
+    (project-dired "Dired" "d")))
+#+end_src
+* Coding
+** LSP Server - EGLOT
+#+begin_src emacs-lisp :tangle lisp/coding.el
+  (add-hook 'typescript-ts-mode-hook 'eglot-ensure)
+#+end_src
+** Code completion
+#+begin_src emacs-lisp :tangle lisp/coding.el
+  (straight-use-package 'corfu)
+  (global-corfu-mode)
+  (setq corfu-auto t)
+#+end_src
+Kind icons
+#+begin_src emacs-lisp :tangle lisp/coding.el
+  (straight-use-package 'kind-icon)
+  (with-eval-after-load 'corfu
+    (require 'kind-icon)
+    (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+#+end_src
+** Typescript mode
+Enable typescript-ts-mode on ts(x) files
+#+begin_src emacs-lisp :tangle lisp/coding.el
+  (add-to-list 'auto-mode-alist '("\\.tsx?\\'" . typescript-ts-mode))
+#+end_src
+
+Prettier
+#+begin_src emacs-lisp :tangle lisp/coding.el
+  (straight-use-package 'prettier-js)
+  (add-hook 'typescript-ts-mode-hook 'prettier-js-mode)
+#+end_src
+
+Global typescript usefull variables
+#+begin_src emacs-lisp :tangle lisp/coding.el
+  (setq typescript-ts-mode-indent-offset 4)
+#+end_src
+* Package Manager - Straight.el 
+#+begin_src emacs-lisp :tangle lisp/straight.el
+  (setq package-enable-at-startup nil)
+  (defvar bootstrap-version)
+  (let ((bootstrap-file
+    (expand-file-name
+      "straight/repos/straight.el/bootstrap.el"
+    (or (bound-and-true-p straight-base-dir)
+      user-emacs-directory)))
+  (bootstrap-version 7))
+    (unless (file-exists-p bootstrap-file)
+      (with-current-buffer
+    (url-retrieve-synchronously
+      "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+      'silent 'inhibit-cookies)
+  (goto-char (point-max))
+  (eval-print-last-sexp)))
+    (load bootstrap-file nil 'nomessage))
+#+end_src
+
+* Bootstrap
+#+begin_src emacs-lisp :tangle init.el
+  (setenv "LIBRARY_PATH"
+	(string-join
+	 '("/opt/homebrew/opt/gcc/lib/gcc/14"
+	   "/opt/homebrew/opt/libgccjit/lib/gcc/14"
+	   "/opt/homebrew/opt/gcc/lib/gcc/14/gcc/aarch64-apple-darwin23/14")
+	 ":"))
+  (load-file (expand-file-name "lisp/straight.el" user-emacs-directory))
+  (load-file (expand-file-name "lisp/evil.el" user-emacs-directory))
+  (load-file (expand-file-name "lisp/appearance.el" user-emacs-directory))
+  (load-file (expand-file-name "lisp/minibuffer.el" user-emacs-directory))
+  (load-file (expand-file-name "lisp/org.el" user-emacs-directory))
+  (load-file (expand-file-name "lisp/help-utilities.el" user-emacs-directory))
+  (load-file (expand-file-name "lisp/magit.el" user-emacs-directory))
+  (load-file (expand-file-name "lisp/project.el" user-emacs-directory))
+  (load-file (expand-file-name "lisp/coding.el" user-emacs-directory))
+  (load-file (expand-file-name "lisp/miscellaneous.el" user-emacs-directory))
+#+end_src
