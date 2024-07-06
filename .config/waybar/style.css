@@ -1,0 +1,10 @@
+* {
+    font-family: "Fira Sans SemiBold";
+    font-size: 12px;
+    min-height: 22px;
+}
+
+window#waybar {
+    background: rgba(255, 255, 255, 0.87);
+}
+
