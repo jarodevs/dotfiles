@@ -188,6 +188,10 @@ mode "resize" {
 }
 bindsym $mod+r mode "resize"
 
+# DUAL MONITOR
+
+k
+
 #
 # Status Bar:
 #
