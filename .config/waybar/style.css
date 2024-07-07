@@ -1,10 +1,18 @@
 * {
-    font-family: "Fira Sans SemiBold";
-    font-size: 12px;
+    font-family: "0xProto Nerd Font";
+    font-size: 13px;
     min-height: 22px;
 }
 
 window#waybar {
-    background: rgba(255, 255, 255, 0.87);
+    background: #000000;
+    color: #FFFFFF;
+}
+
+#battery,
+#network,
+#clock {
+    margin-right: 10px;
+    margin-left: 10px;
 }
 

@@ -1,26 +1,29 @@
 {
-  "layer": "top",
+  "layer": "bottom",
   "modules-left": [],
-  "modules-center": ["river/window"],
-  "modules-right": ["battery", "clock"],
+  "modules-center": [],
+  "modules-right": ["network", "battery", "clock"],
   "clock": {
     "format-alt": "{:%a, %d. %b  %H:%M}"
   },
-  "river/window": {
-    "format": "mode: {}"
-  },
   "battery": {
-    "bat": "BAT0",
-    "interval": 60,
     "states": {
       "warning": 30,
       "critical": 15
     },
     "format": "{capacity}% {icon}",
     "format-icons": ["", "", "", "", ""],
-    "max-length": 25
-  },
-  "battery": {
+    "format-charging": "{capacity}% ",
     "weighted-average": true
-  }
+  },
+  "network": {
+     "format-wifi": "{essid} ({signalStrength}%) ",
+     "format-ethernet": "{ipaddr}/{cidr} ",
+     "format-disconnected": "", //An empty format will hide the module.
+     "tooltip-format": "{ifname} via {gwaddr} 󰊗",
+     "tooltip-format-wifi": "{essid} ({signalStrength}%) ",
+     "tooltip-format-ethernet": "{ifname} ",
+     "tooltip-format-disconnected": "Disconnected",
+     "max-length": 50
+    }
 }
