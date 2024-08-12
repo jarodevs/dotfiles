@@ -43,7 +43,7 @@ Exec path used by emacs needs to be configured to load path from shell
 #+end_src
 ** Font configuration
 #+begin_src emacs-lisp :tangle lisp/appearance.el
-  (set-face-attribute 'default nil :font "Ubuntu Mono" :height 160)
+  (set-face-attribute 'default nil :font "0xProto Nerd Font" :height 110)
 #+end_src
 
 ** Theme configuration

@@ -17,13 +17,13 @@
     "weighted-average": true
   },
   "network": {
-     "format-wifi": "{essid} ({signalStrength}%) ",
-     "format-ethernet": "{ipaddr}/{cidr} ",
+     "interval": 5,
+     "format-wifi": "{bandwidthDownBits} {bandwidthUpBits} {essid} ({signalStrength}%) ",
+     "format-ethernet": "{bandwidthDownBits} {bandwidthUpBits} {essid} ({signalStrength}%) ",
      "format-disconnected": "", //An empty format will hide the module.
-     "tooltip-format": "{ifname} via {gwaddr} 󰊗",
-     "tooltip-format-wifi": "{essid} ({signalStrength}%) ",
-     "tooltip-format-ethernet": "{ifname} ",
+     "tooltip-format-wifi": "{ipaddr}",
+     "tooltip-format-ethernet": "{ipaddr}",
      "tooltip-format-disconnected": "Disconnected",
      "max-length": 50
-    }
+    },
 }

@@ -163,6 +163,9 @@ exec swayidle -w \
     bindsym XF86AudioNext exec playerctl next
     bindsym XF86AudioPrev exec playerctl previous
     bindsym XF86Search exec wmenu-run
+    bindswitch lid:on exec swaymsg output eDP-1 disable
+    bindswitch lid:off exec swaymsg output eDP-1 enable
+
 #
 # Resizing containers:
 #
@@ -194,4 +197,4 @@ bindsym $mod+r mode "resize"
 # Read `man 5 sway-bar` for more information about this section.
 include /etc/sway/config.d/*
 
-exec_always waybar
+exec_always waybar 
