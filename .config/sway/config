@@ -2,6 +2,8 @@
 #
 # Logo key. Use Mod1 for Alt.
 set $mod Mod4
+default_border pixel
+default_floating_border pixel
 
 # Home row direction keys, like vim
 set $left h
