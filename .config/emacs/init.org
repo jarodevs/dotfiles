@@ -293,6 +293,13 @@ Candidate documentation annotation
   (setq org-agenda-files '("~/Documents/org/"))
   (evil-set-initial-state 'org-agenda-mode 'normal)
 #+end_src
+* Markdown
+#+begin_src emacs-lisp :tangle lisp/markdown.el
+  (straight-use-package 'markdown-mode)
+  (require 'markdown-mode)
+  (setq markdown-command "multimarkdown")
+  (define-key markdown-mode-map (kbd "C-c C-e") 'markdown-do)
+#+end_src
 * Help utilities 
 #+begin_src emacs-lisp :tangle lisp/help-utilities.el
   (straight-use-package 'which-key)
@@ -347,8 +354,8 @@ Candidate documentation annotation
 ** Code completion
 #+begin_src emacs-lisp :tangle lisp/coding.el
   (straight-use-package 'corfu)
-  (global-corfu-mode)
-  (setq corfu-auto t)
+  ;;(global-corfu-mode)
+  ;;(setq corfu-auto t)
 #+end_src
 Kind icons
 #+begin_src emacs-lisp :tangle lisp/coding.el
@@ -411,4 +418,5 @@ Global typescript usefull variables
   (load-file (expand-file-name "lisp/project.el" user-emacs-directory))
   (load-file (expand-file-name "lisp/coding.el" user-emacs-directory))
   (load-file (expand-file-name "lisp/miscellaneous.el" user-emacs-directory))
+  (load-file (expand-file-name "lisp/markdown.el" user-emacs-directory))
 #+end_src
